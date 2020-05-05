@@ -1,0 +1,10 @@
+Saradomin,1,1,5,0,0
+Zamorak,2,1,9,3,3
+Zulrah,2,1,7,0,0
+Armadyl,3,1,38,5,27
+Zezima,3,1,33,9,24
+Bandos,5,5,82,50,57
+Mtenis96,7,3,97,30,72
+Jaluco,7,7,186,0,151
+IchotMano,11,5,198,5,158
+Woox,12,12,221,104,161
