@@ -97,7 +97,8 @@ int main(int argument_count, char* arguments[])
     idle -> name = "idle";
     idle -> pid = 0;
     idle -> actual = RUNNING;
-    idle ->bursts[0]=255;
+    idle -> bursts[0]=255;
+    idle -> time_left;
     int n_finished = 0;
     int timer = 0;
     Process* on_cpu = idle;
@@ -109,6 +110,7 @@ int main(int argument_count, char* arguments[])
         if (q->all_p[i].actual==FINISHED) {
           printf("[while]-----%s ya termino con turnaround_time:%d\n",q->all_p[i].name,q->all_p[i].turnaround_time);
         }
+        printf("   nombre:%s,estado:%d, time_left:%d\n",q->all_p[i].name,q->all_p[i].actual,q->all_p[i].time_left);
       }
 
 /*----------------------------Version preemptive------------------------------*/
@@ -122,6 +124,7 @@ int main(int argument_count, char* arguments[])
             q->all_p[i].actual = READY;
             q->all_p[i].time_left_burst = q->all_p[i].bursts[q->all_p[i].actual_burst];
             q->all_p[i].turnaround_time++;
+            printf("   !!!   llegue %s, mi primer burst es de: %d   !!!   \n",q->all_p[i].name, q->all_p[i].time_left_burst);
             q->p_pointer->size == 0 ?
               ll_append(q->p_pointer,&q->all_p[i]) :
               ll_insert(&q->all_p[i],q->p_pointer->head,q->p_pointer,0);
@@ -142,6 +145,7 @@ int main(int argument_count, char* arguments[])
             q->all_p[i].waiting_time++;
             q->all_p[i].time_left_burst --;
             if (q->all_p[i].time_left_burst == 0) {
+              printf("%s dejo de esperar\n",q->all_p[i].name);
               q->all_p[i].actual = READY;
               q->all_p[i].actual_burst++;
               q->all_p[i].time_left_burst= q->all_p[i].bursts[q->all_p[i].actual_burst];
@@ -149,6 +153,7 @@ int main(int argument_count, char* arguments[])
                 ll_append(q->p_pointer,&q->all_p[i]);
               }
               else{
+                printf("[en cola despues de wait] en la cabeza:%s\n",q->all_p[i].name );
                 ll_insert(&q->all_p[i],q->p_pointer->head,q->p_pointer,0);
               }
             }
@@ -178,6 +183,9 @@ int main(int argument_count, char* arguments[])
 
               if (on_cpu->actual_burst<2*on_cpu->n_burst-1) {
                 on_cpu->actual = WAITING;
+                on_cpu->time_left_burst = on_cpu->bursts[on_cpu->actual_burst];
+                printf("    +++    %s deberia esperar %d en burst %d    +++   \n",on_cpu->name,on_cpu->bursts[on_cpu->actual_burst],on_cpu->actual_burst);
+
               }
               else{
                 on_cpu->actual = FINISHED;
@@ -194,6 +202,8 @@ int main(int argument_count, char* arguments[])
               ll_pop(q->p_pointer);
               on_cpu->actual = RUNNING;
               on_cpu->time_left_burst == 0 ? on_cpu->bursts[on_cpu->actual_burst] : on_cpu->time_left_burst;
+              printf("    [q==0]oooo    %s deberia entrar con time_left %d en burst %d  oooo   \n",on_cpu->name,on_cpu->time_left,on_cpu->actual_burst);
+
             }
 
           }
@@ -212,6 +222,8 @@ int main(int argument_count, char* arguments[])
               if (on_cpu->actual_burst<2*on_cpu->n_burst-1) {
                 on_cpu->actual = WAITING;
                 on_cpu->time_left_burst = on_cpu->bursts[on_cpu->actual_burst];
+                printf("    +++    %s deberia esperar %d en burst %d    +++   \n",on_cpu->name,on_cpu->bursts[on_cpu->actual_burst],on_cpu->actual_burst);
+
               }
               //si ese era mi ulitmo burst
               else {
@@ -227,6 +239,55 @@ int main(int argument_count, char* arguments[])
         }
 
 
+        else{
+          //Si queda quantum
+          if (left_quantum>0) {
+
+            //Si se me acabo el burst
+            if (on_cpu->time_left_burst==0) {
+              on_cpu->actual_burst++;
+              printf("%s, mi burst actual %d\n",on_cpu->name,on_cpu->actual_burst);
+
+              //Si no era mi ultimo burst
+              if (on_cpu->actual_burst<2*on_cpu->n_burst-1) {
+                on_cpu->actual = WAITING;
+                on_cpu->time_left_burst = on_cpu->bursts[on_cpu->actual_burst];
+                printf("    +++    %s deberia esperar %d en burst %d    +++   \n",on_cpu->name,on_cpu->bursts[on_cpu->actual_burst],on_cpu->actual_burst);
+
+              }
+
+              //Si era mi último burst
+              else{
+                on_cpu->actual=FINISHED;
+                if (on_cpu!=idle) {
+                  n_finished++;
+                }
+              }
+
+              //Puedo poner a alguien de la lista
+              if (q->p_pointer->size>0) {
+                on_cpu = q->p_pointer->head->value;
+                on_cpu->chosen++;
+                ll_pop(q->p_pointer);
+                on_cpu->actual = RUNNING;
+                on_cpu->time_left_burst == 0 ? on_cpu->bursts[on_cpu->actual_burst] : on_cpu->time_left_burst;
+                printf("    [q>0]oooo    %s deberia entrar con time_left %d en burst %d  oooo   \n",on_cpu->name,on_cpu->time_left,on_cpu->actual_burst);
+
+              }
+
+              //No hay nadie en la lista
+              else{
+                on_cpu = idle;
+              }
+            }
+
+            //Si me queda burst
+            else{
+              printf("Puedo seguir corriendo %s\n",on_cpu->name);
+
+            }
+          }
+        }
         //Si solo esta corriendo el idle que pase el siguiente
         if(on_cpu == idle && q->p_pointer->size>0 ){
           q->p_pointer->head->value->actual=RUNNING;
@@ -235,47 +296,6 @@ int main(int argument_count, char* arguments[])
           ll_pop(q->p_pointer);
           on_cpu->actual = RUNNING;
           on_cpu->time_left_burst == 0 ? on_cpu->bursts[on_cpu->actual_burst] : on_cpu->time_left_burst;
-        }
-        //Si queda quantum
-        if (left_quantum>0) {
-
-          //Si se me acabo el burst
-          if (on_cpu->time_left_burst==0) {
-            on_cpu->actual_burst++;
-            printf("%s, mi burst actual %d\n",on_cpu->name,on_cpu->actual_burst);
-
-            //Si no era mi ultimo burst
-            if (on_cpu->actual_burst<2*on_cpu->n_burst-1) {
-              on_cpu->actual = WAITING;
-              on_cpu->time_left_burst = on_cpu->bursts[on_cpu->actual_burst];
-            }
-
-            //Si era mi último burst
-            else{
-              on_cpu->actual=FINISHED;
-              n_finished++;
-            }
-
-            //Puedo poner a alguien de la lista
-            if (q->p_pointer->size>0) {
-              on_cpu = q->p_pointer->head->value;
-              on_cpu->chosen++;
-              ll_pop(q->p_pointer);
-              on_cpu->actual = RUNNING;
-              on_cpu->time_left_burst == 0 ? on_cpu->bursts[on_cpu->actual_burst] : on_cpu->time_left_burst;
-            }
-
-            //No hay nadie en la lista
-            else{
-              on_cpu = idle;
-            }
-          }
-
-          //Si me queda burst
-          else{
-            printf("Puedo seguir corriendo %s\n",on_cpu->name);
-
-          }
         }
 
 
@@ -288,6 +308,7 @@ int main(int argument_count, char* arguments[])
         }
         else{
           on_cpu->time_left_burst = 255;
+          on_cpu->time_left = 255;
         }
 
         if (timer==100) {
@@ -423,13 +444,10 @@ int main(int argument_count, char* arguments[])
 
     FILE* outputfile;
     outputfile = fopen (outputname, "w+");
-    for (size_t j = 1; j <= n_processes; j++) {
-      for (size_t i = 0; i < n_processes; i++) {
-        if (q->all_p[i].pid==j) {
-          printf("%s,%d,%d,%d\n", q->all_p[i].name,q->all_p[i].turnaround_time-1,q->all_p[i].waiting_time,q->all_p[i].response_time);
-          fprintf(outputfile, "%s,%d,%d,%d,%d,%d\n", q->all_p[i].name, q->all_p[i].chosen, q->all_p[i].interrupted, q->all_p[i].turnaround_time-2, q->all_p[i].response_time-1, q->all_p[i].waiting_time-1);
-        }
-      }
+
+    for (size_t i = 1; i <= n_processes; i++) {
+      printf("%s,%d,%d,%d\n", q->all_p[i].name,q->all_p[i].turnaround_time-1,q->all_p[i].waiting_time,q->all_p[i].response_time);
+      fprintf(outputfile, "%s,%d,%d,%d,%d,%d\n", q->all_p[i].name, q->all_p[i].chosen, q->all_p[i].interrupted, q->all_p[i].turnaround_time-2, q->all_p[i].response_time-1, q->all_p[i].waiting_time-1);
     }
 
 

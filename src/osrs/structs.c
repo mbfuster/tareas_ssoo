@@ -189,7 +189,7 @@ void ll_insert(Process* p, Node* prev, LinkedList* ll, int location){
       }
       else if (p->time_left==prev->next->value->time_left) {
         Node* new = node_init(p);
-        if (p->time_left_burst<prev->next->value->time_left_burst) {
+        if (p->time_left_burst<=prev->next->value->time_left_burst) {
           new->next = prev->next;
           prev->next = new;
           ll->size++;
