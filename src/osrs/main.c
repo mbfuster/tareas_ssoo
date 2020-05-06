@@ -106,17 +106,34 @@ int main(int argument_count, char* arguments[])
     int left_quantum = quantum;
 
     while (n_finished < n_processes) {
-      for (size_t i = 0; i < n_processes; i++) {
-        if (q->all_p[i].actual==FINISHED) {
-          printf("[while]-----%s ya termino con turnaround_time:%d\n",q->all_p[i].name,q->all_p[i].turnaround_time);
-        }
-        printf("   nombre:%s,estado:%d, time_left:%d\n",q->all_p[i].name,q->all_p[i].actual,q->all_p[i].time_left);
-      }
 
 /*----------------------------Version preemptive------------------------------*/
       if (!strcmp(version, "p")) {
+        printf("***********************************************************\n");
+        printf("Inicio de periodo\n");
+        printf("-----------------\n");
+
+
         printf("timer:%d, %s,le queda %d\n",timer,on_cpu->name, on_cpu->time_left_burst);
+        for (size_t i = 0; i < n_processes; i++){
+          if (q->all_p[i].actual==FINISHED) {
+            printf("-----%s ya termino con turnaround_time:%d\n",q->all_p[i].name,q->all_p[i].turnaround_time);
+          }
+          printf("nombre:%s,estado:%d, time_left:%d\n",q->all_p[i].name,q->all_p[i].actual,q->all_p[i].time_left);
+        }
         printf("terminados: %d\n",n_finished );
+        printf(">>en la cola :\n");
+        Node* nodo = q->p_pointer->head;
+        while (nodo) {
+          printf(">>>>>>%s,%d,%d\n",nodo->value->name, nodo->value->time_left, nodo->value->time_left_burst);
+          nodo = nodo->next;
+        }
+        printf("***********************************************************\n");
+        printf("Durante de periodo\n");
+        printf("------------------\n");
+
+
+
 
         for (size_t i = 0; i < n_processes; i++) {
           //Chequear si llegó algún proceso
@@ -174,11 +191,13 @@ int main(int argument_count, char* arguments[])
             if (on_cpu->time_left_burst>0 && on_cpu!=idle) {
               on_cpu->actual = READY;
               on_cpu->response_time++;
-              ll_insert(on_cpu,q->p_pointer->head,q->p_pointer,0); //O(n)
+              if (on_cpu!=idle) {
+                ll_insert(on_cpu,q->p_pointer->head,q->p_pointer,0); //O(n)
+              }
             }
             // y si se acaba el burst
             else{
-              on_cpu->actual_burst++;
+              on_cpu!=idle?on_cpu->actual_burst++:on_cpu->actual_burst;
               printf("%s, mi burst actual %d\n",on_cpu->name,on_cpu->actual_burst);
 
               if (on_cpu->actual_burst<2*on_cpu->n_burst-1) {
@@ -197,6 +216,7 @@ int main(int argument_count, char* arguments[])
 
             if (q->p_pointer->size>0) {
               q->p_pointer->head->value->actual = RUNNING;
+              printf("////////////////////saque a %s de la cpu\n",on_cpu->name);
               on_cpu = q->p_pointer->head->value;
               on_cpu->chosen++;
               ll_pop(q->p_pointer);
@@ -215,7 +235,7 @@ int main(int argument_count, char* arguments[])
             }
             //si no me queda burst
             else{
-              on_cpu->actual_burst++; ////////////////////////////////////AQUIIIIIIIIIIIIIIIIIIIIIIIIII
+              on_cpu!=idle?on_cpu->actual_burst++:on_cpu->actual_burst;
               printf("%s, mi burst actual %d\n",on_cpu->name,on_cpu->actual_burst);
 
               //si ese no era mi ultimo burst
@@ -245,7 +265,7 @@ int main(int argument_count, char* arguments[])
 
             //Si se me acabo el burst
             if (on_cpu->time_left_burst==0) {
-              on_cpu->actual_burst++;
+              on_cpu!=idle?on_cpu->actual_burst++:on_cpu->actual_burst;
               printf("%s, mi burst actual %d\n",on_cpu->name,on_cpu->actual_burst);
 
               //Si no era mi ultimo burst
@@ -266,6 +286,7 @@ int main(int argument_count, char* arguments[])
 
               //Puedo poner a alguien de la lista
               if (q->p_pointer->size>0) {
+                printf("////////////////////saque a %s de la cpu\n",on_cpu->name);
                 on_cpu = q->p_pointer->head->value;
                 on_cpu->chosen++;
                 ll_pop(q->p_pointer);
@@ -277,6 +298,7 @@ int main(int argument_count, char* arguments[])
 
               //No hay nadie en la lista
               else{
+                printf("jgfcjyfcjyfxkyrfxkskyrsz,ytx,ucluyvulyhvlhb\n");
                 on_cpu = idle;
               }
             }
@@ -291,6 +313,7 @@ int main(int argument_count, char* arguments[])
         //Si solo esta corriendo el idle que pase el siguiente
         if(on_cpu == idle && q->p_pointer->size>0 ){
           q->p_pointer->head->value->actual=RUNNING;
+          printf("////////////////////saque a %s de la cpu\n",on_cpu->name);
           on_cpu = q->p_pointer->head->value;
           on_cpu->chosen++;
           ll_pop(q->p_pointer);
@@ -311,9 +334,9 @@ int main(int argument_count, char* arguments[])
           on_cpu->time_left = 255;
         }
 
-        if (timer==100) {
+        if (timer==50) {
           n_finished=10;
-          printf("forced\n");
+          printf("error: forced\n");
         }
 
       }
