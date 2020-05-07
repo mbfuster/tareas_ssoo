@@ -133,22 +133,6 @@ int main(int argument_count, char* arguments[])
         printf("------------------\n");
 
 
-
-
-        for (size_t i = 0; i < n_processes; i++) {
-          //Chequear si llegó algún proceso
-          if (timer == q->all_p[i].time_of_arrival && arrival_ptr<n_processes) {
-            q->all_p[i].actual = READY;
-            q->all_p[i].time_left_burst = q->all_p[i].bursts[q->all_p[i].actual_burst];
-            q->all_p[i].turnaround_time++;
-            printf("   !!!   llegue %s, mi primer burst es de: %d   !!!   \n",q->all_p[i].name, q->all_p[i].time_left_burst);
-            q->p_pointer->size == 0 ?
-              ll_append(q->p_pointer,&q->all_p[i]) :
-              ll_insert(&q->all_p[i],q->p_pointer->head,q->p_pointer,0);
-            arrival_ptr +=1 ;
-          }
-        }
-
         //para los que esperan o estan ready
         for (size_t i = 0; i < n_processes; i++) {
           if (q->all_p[i].actual == READY) {
@@ -183,10 +167,11 @@ int main(int argument_count, char* arguments[])
         //Que pasa si se acaba el quantum
         if (left_quantum == 0) {
           printf("--------------------fin de un quantum--------------------\n");
-          on_cpu->interrupted++;
 
           //Si la cola no esta vacia
           if (q->p_pointer->size>0) {
+            on_cpu->interrupted++;
+
             // y si queda tiempo de burst
             if (on_cpu->time_left_burst>0 && on_cpu!=idle) {
               on_cpu->actual = READY;
@@ -217,6 +202,10 @@ int main(int argument_count, char* arguments[])
             if (q->p_pointer->size>0) {
               printf("////////////////////saque a %s de la cpu\n",on_cpu->name);
               on_cpu = q->p_pointer->head->value;
+              if (on_cpu->actual_burst==0 & on_cpu->interrupted==0) {
+                on_cpu->response_time=timer-on_cpu->time_of_arrival;
+                printf("|/_ seteando response_time a %s\n",on_cpu->name);
+              }
               on_cpu->chosen++;
               ll_pop(q->p_pointer);
               on_cpu->actual = RUNNING;
@@ -229,7 +218,7 @@ int main(int argument_count, char* arguments[])
           else{
             //Si todavia me queda tiempo de burst
             if (on_cpu->time_left_burst>0) {
-              //on_cpu->interrupted++;
+              on_cpu->interrupted++;
               printf("[q==0]Puedo seguir corriendo a %s\n",on_cpu->name);
             }
             //si no me queda burst
@@ -287,6 +276,10 @@ int main(int argument_count, char* arguments[])
               if (q->p_pointer->size>0) {
                 printf("////////////////////saque a %s de la cpu\n",on_cpu->name);
                 on_cpu = q->p_pointer->head->value;
+                if (on_cpu->actual_burst<1 & on_cpu->interrupted==0) {
+                  on_cpu->response_time=timer - on_cpu->time_of_arrival;
+                  printf("|/_ seteando response_time a %s\n",on_cpu->name);
+                }
                 on_cpu->chosen++;
                 ll_pop(q->p_pointer);
                 on_cpu->actual = RUNNING;
@@ -318,6 +311,20 @@ int main(int argument_count, char* arguments[])
           ll_pop(q->p_pointer);
           on_cpu->actual = RUNNING;
           //on_cpu->time_left_burst == 0 ? on_cpu->bursts[on_cpu->actual_burst] : on_cpu->time_left_burst;
+        }
+
+        for (size_t i = 0; i < n_processes; i++) {
+          //Chequear si llegó algún proceso
+          if (timer == q->all_p[i].time_of_arrival && arrival_ptr<n_processes) {
+            q->all_p[i].actual = READY;
+            q->all_p[i].time_left_burst = q->all_p[i].bursts[q->all_p[i].actual_burst];
+            q->all_p[i].turnaround_time++;
+            printf("   !!!   llegue %s, mi primer burst es de: %d   !!!   \n",q->all_p[i].name, q->all_p[i].time_left_burst);
+            q->p_pointer->size == 0 ?
+              ll_append(q->p_pointer,&q->all_p[i]) :
+              ll_insert(&q->all_p[i],q->p_pointer->head,q->p_pointer,0);
+            arrival_ptr +=1 ;
+          }
         }
 
 

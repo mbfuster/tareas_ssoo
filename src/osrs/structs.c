@@ -7,10 +7,10 @@
 Process* process_init(uint8_t n_burst)
 {
   // Creo la lista ligada
-  Process* p = malloc(sizeof(Process));
+  Process* p = calloc(1,sizeof(Process));
   // Pongo sus punteros en nulo y su contador en 0
   p -> pid = 0;
-  p -> name = (char*)malloc(32*sizeof(char));
+  p -> name = (char*)calloc(32,sizeof(char));
   p -> actual;
   p -> n_burst = n_burst;
   p -> bursts = (uint8_t*)calloc(2*n_burst-1, sizeof(uint8_t));
@@ -59,7 +59,7 @@ void queu_destroy(Queu* q, uint8_t n_processes) {
 static Node* node_init(Process* value)
 {
   // Pido memoria para el nodo
-  Node* node = malloc(sizeof(Node));
+  Node* node = calloc(1,sizeof(Node));
 
   // Le asigno el valor correspondiente
   node -> value = value;
