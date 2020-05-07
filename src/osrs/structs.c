@@ -30,9 +30,9 @@ Process* process_init(uint8_t n_burst)
 void process_destroy(Process* p)
 {
   free(p->name);
-  for (size_t i = 0; i <2*p->n_burst - 1; i++) {
-    free(&p->bursts[i]);
-  }
+  //for (size_t i = 0; i <2*p->n_burst - 1; i++) {
+  //  free(&p->bursts[i]);
+  //}
   free(p->bursts);
   free(p);
 }
@@ -44,8 +44,12 @@ Queu* q_init(uint8_t n_processes){
   return q;
 }
 
-void queu_destroy(Queu* q) {
+void queu_destroy(Queu* q, uint8_t n_processes) {
   ll_destroy(q -> p_pointer);
+  //for (size_t i = 0; i < n_processes; i++) {
+  //  process_destroy(q->all_p[i]);
+  //}
+  free(q->all_p);
   free(q);
 }
 

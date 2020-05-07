@@ -69,3 +69,5 @@ Queu* q_init(uint8_t n_processes);
 void ll_pop(LinkedList* ll);
 
 void ll_insert(Process* p, Node* prev, LinkedList* ll, int location);
+
+void queu_destroy(Queu* q, uint8_t n_processes);

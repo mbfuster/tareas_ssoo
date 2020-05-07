@@ -94,7 +94,7 @@ int main(int argument_count, char* arguments[])
 
     uint8_t default_val = 1;
     Process* idle = process_init(default_val);
-    idle -> name = "idle";
+    strcpy(idle->name, "idle");
     idle -> pid = 0;
     idle -> actual = RUNNING;
     idle -> bursts[0]=255;
@@ -190,7 +190,7 @@ int main(int argument_count, char* arguments[])
             // y si queda tiempo de burst
             if (on_cpu->time_left_burst>0 && on_cpu!=idle) {
               on_cpu->actual = READY;
-              on_cpu->response_time++;
+              //on_cpu->response_time++;
               if (on_cpu!=idle) {
                 ll_insert(on_cpu,q->p_pointer->head,q->p_pointer,0); //O(n)
               }
@@ -215,23 +215,22 @@ int main(int argument_count, char* arguments[])
             }
 
             if (q->p_pointer->size>0) {
-              q->p_pointer->head->value->actual = RUNNING;
               printf("////////////////////saque a %s de la cpu\n",on_cpu->name);
               on_cpu = q->p_pointer->head->value;
               on_cpu->chosen++;
               ll_pop(q->p_pointer);
               on_cpu->actual = RUNNING;
-              on_cpu->time_left_burst == 0 ? on_cpu->bursts[on_cpu->actual_burst] : on_cpu->time_left_burst;
+              //on_cpu->time_left_burst == 0 ? on_cpu->bursts[on_cpu->actual_burst] : on_cpu->time_left_burst;
               printf("    [q==0]oooo    %s deberia entrar con time_left %d en burst %d  oooo   \n",on_cpu->name,on_cpu->time_left,on_cpu->actual_burst);
-
             }
 
           }
           //Si la cola esta vacia
           else{
             //Si todavia me queda tiempo de burst
-            if (on_cpu->time_left_burst!=0) {
-              on_cpu->interrupted++;
+            if (on_cpu->time_left_burst>0) {
+              //on_cpu->interrupted++;
+              printf("[q==0]Puedo seguir corriendo a %s\n",on_cpu->name);
             }
             //si no me queda burst
             else{
@@ -252,8 +251,8 @@ int main(int argument_count, char* arguments[])
                   n_finished++;
                 }
               }
+              on_cpu = idle;
             }//
-            on_cpu = idle;
           }
           left_quantum = quantum;
         }
@@ -291,7 +290,7 @@ int main(int argument_count, char* arguments[])
                 on_cpu->chosen++;
                 ll_pop(q->p_pointer);
                 on_cpu->actual = RUNNING;
-                on_cpu->time_left_burst == 0 ? on_cpu->bursts[on_cpu->actual_burst] : on_cpu->time_left_burst;
+                //on_cpu->time_left_burst == 0 ? on_cpu->bursts[on_cpu->actual_burst] : on_cpu->time_left_burst;
                 printf("    [q>0]oooo    %s deberia entrar con time_left %d en burst %d  oooo   \n",on_cpu->name,on_cpu->time_left,on_cpu->actual_burst);
 
               }
@@ -312,13 +311,13 @@ int main(int argument_count, char* arguments[])
         }
         //Si solo esta corriendo el idle que pase el siguiente
         if(on_cpu == idle && q->p_pointer->size>0 ){
-          q->p_pointer->head->value->actual=RUNNING;
+          //q->p_pointer->head->value->actual=RUNNING;
           printf("////////////////////saque a %s de la cpu\n",on_cpu->name);
           on_cpu = q->p_pointer->head->value;
           on_cpu->chosen++;
           ll_pop(q->p_pointer);
           on_cpu->actual = RUNNING;
-          on_cpu->time_left_burst == 0 ? on_cpu->bursts[on_cpu->actual_burst] : on_cpu->time_left_burst;
+          //on_cpu->time_left_burst == 0 ? on_cpu->bursts[on_cpu->actual_burst] : on_cpu->time_left_burst;
         }
 
 
@@ -468,10 +467,19 @@ int main(int argument_count, char* arguments[])
     FILE* outputfile;
     outputfile = fopen (outputname, "w+");
 
-    for (size_t i = 1; i <= n_processes; i++) {
+    for (size_t i = 0; i < n_processes; i++) {
       printf("%s,%d,%d,%d\n", q->all_p[i].name,q->all_p[i].turnaround_time-1,q->all_p[i].waiting_time,q->all_p[i].response_time);
       fprintf(outputfile, "%s,%d,%d,%d,%d,%d\n", q->all_p[i].name, q->all_p[i].chosen, q->all_p[i].interrupted, q->all_p[i].turnaround_time-2, q->all_p[i].response_time-1, q->all_p[i].waiting_time-1);
     }
+    fclose(outputfile);
+
+
+    for (size_t i = 0; i < n_processes; i++) {
+      process_destroy(all_p[i]);
+    }
+    process_destroy(idle);
+    queu_destroy(q,n_processes);
+
 
 
 
